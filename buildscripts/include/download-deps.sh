@@ -78,7 +78,9 @@ see <ndk>/sources/third_party/shaderc
 HEREDOC
 
 # libplacebo
-[ ! -d libplacebo ] && git clone --recursive https://github.com/haasn/libplacebo
+if [ ! -d libplacebo ]; then
+    git clone --recursive --branch "v${v_libplacebo}" --depth 1 https://code.videolan.org/videolan/libplacebo.git libplacebo
+fi
 
 # curl
 if [ ! -d curl ]; then
