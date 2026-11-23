@@ -1,95 +1,161 @@
-# mpvlib Android
+# mpv-android
 
-Android library based on libmpv for video playback and thumbnail generation.
+**Android library powered by [mpv](https://mpv.io/), FFmpeg, and libplacebo.**
 
-## Overview
+This fork provides native media playback and thumbnail-generation capabilities for Android applications through a Kotlin-friendly `MPVLib` interface. It is maintained as a prebuilt Android Archive (AAR) for direct integration into apps such as **mpvFlux**.
 
-This library provides Android bindings for the mpv media player, allowing developers to integrate mpv's powerful video playback capabilities and thumbnail generation into their Android applications.
+> **Release status:** v1.1.0 is being prepared. The four architecture builds have completed, but the combined release AAR and on-device playback compatibility should be verified before production use.
+
+## Native dependency targets
+
+| Component | Version |
+| --- | --- |
+| mpv | **0.42.0** |
+| FFmpeg | **9.1** (`n9.1`) |
+| libplacebo | **7.387.0** (`v7.387.0`) |
+| Android library | **1.1.0** |
+
+Versions above are the pinned build targets for v1.1.0; they are not a substitute for verifying the contents of the published binary.
 
 ## Features
 
-- Full mpv media player integration
-- Video thumbnail generation
-- Support for multiple ABIs: armeabi-v7a, arm64-v8a, x86, x86_64
-- Kotlin-friendly API
+- Native mpv playback integration through `MPVLib`
+- Hardware-decoding and Vulkan-oriented native build configuration
+- Video thumbnail extraction
+- Playback commands, properties, and event observation
+- Kotlin Flow and StateFlow-based property/event support
+- Prebuilt AAR distribution through GitHub Releases
+- Builds for four Android ABIs
+
+## Supported architectures
+
+| Android ABI | Build architecture |
+| --- | --- |
+| `arm64-v8a` | `arm64` |
+| `armeabi-v7a` | `armv7l` |
+| `x86` | `x86` |
+| `x86_64` | `x86_64` |
 
 ## Requirements
 
-- Android 5.0 (API level 21) or higher
-- Android Studio with Gradle support
+- **Android 7.0 (API 24)** or later
+- An Android project using Gradle
+- Java 17 for building this library from source
 
-### Option 1: Via Maven Central (Recommended)
+## Installation
 
-Ensure `mavenCentral()` is in your `dependencyResolutionManagement.repositories` or `repositories`:
+### Download the AAR
 
-```gradle
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+Once v1.1.0 has been published, download **`mpv-android-lib-v1.1.0.aar`** from the [GitHub Releases page](https://github.com/Muhammedahmed18/mpv-android/releases).
+
+Place the file in your Android app module:
+
+```text
+app/
+└── libs/
+    └── mpv-android-lib-v1.1.0.aar
 ```
 
-Add the dependency to your module's `build.gradle`:
+Create `app/libs/` if it does not exist.
 
-```gradle
-dependencies {
-    implementation("io.github.marlboro-advance:mpv-android:1.0.0")
-}
-```
-
-### Option 2: Pre-built AAR
-
-1. Download the pre-built AAR from the [releases page](https://github.com/marlboro-advance/mpv-android/releases)
-2. Create a `libs` directory in your app module if it doesn't exist
-3. Copy the AAR file (e.g., `mpv-android-lib-v1.0.0.aar`) to the `libs` directory
-4. Add to your module `build.gradle`:
-
-```gradle
-dependencies {
-    implementation(files("libs/mpv-android-lib-v1.0.0.aar"))
-}
-```
-
-## Usage
-
-Basic implementation example:
+In the app module's **Kotlin DSL** (`build.gradle.kts`):
 
 ```kotlin
-// Import the mpv library
+dependencies {
+    implementation(files("libs/mpv-android-lib-v1.1.0.aar"))
+}
+```
+
+Or **Groovy DSL** (`build.gradle`):
+
+```groovy
+dependencies {
+    implementation files('libs/mpv-android-lib-v1.1.0.aar')
+}
+```
+
+Sync Gradle after adding the dependency. A direct AAR dependency does not automatically resolve transitive dependencies; ensure the consuming app provides any required Kotlin/coroutines dependencies and compatible Android configuration.
+
+> **Distribution:** v1.1.0 is intended for GitHub Releases as an AAR. Maven Central installation instructions for earlier versions do not apply to this release.
+
+## Kotlin API
+
+The library exposes `is.xyz.mpv.MPVLib`. Its native methods cover lifecycle, playback commands, surfaces, properties, events, and thumbnail generation.
+
+```kotlin
 import is.xyz.mpv.MPVLib
 
-// Initialize the player
-MPVLib.initialize(context)
+// Call from your Android playback lifecycle after the required setup.
+MPVLib.create(applicationContext)
+MPVLib.init()
+MPVLib.command("loadfile", videoPath)
 
-// Load and play a video file
-MPVLib.loadFile("path/to/video.mp4")
+// Playback commands
+MPVLib.command("set", "pause", "yes")
+MPVLib.command("set", "pause", "no")
 
-// Handle playback controls
-MPVLib.play()
-MPVLib.pause()
+// Release resources when playback ends.
+MPVLib.destroy()
 ```
 
-## Building
+Attach and detach a valid Android `Surface` using `MPVLib.attachSurface(surface)` and `MPVLib.detachSurface()` as appropriate for the app's UI lifecycle. The snippet is an API illustration, not a complete player implementation; consult the existing Android integration for correct threading, surface lifecycle, and options.
 
-The library can be built using the provided build scripts:
+Additional methods include `setOptionString`, `getPropertyString`, `setPropertyString`, `observeProperty`, `grabThumbnail`, and `grabThumbnailFast`.
+
+## Building from source
+
+The repository contains native build scripts under `buildscripts/` and GitHub Actions workflows under `.github/workflows/`.
+
+### GitHub Actions
+
+1. Push changes to your fork's default branch.
+2. Open **Actions → build**.
+3. Let the push-triggered build finish, or use **Run workflow** if manual dispatch is enabled.
+4. Check that the four architecture jobs succeed.
+5. Download the architecture-specific artifacts for inspection.
+
+The **build** workflow produces per-architecture artifacts. These are not the final combined release AAR.
+
+### Release AAR
+
+1. Verify all four architecture builds and native dependency versions.
+2. Create a Git tag named `v1.1.0` on the verified commit.
+3. Publish the tag/release to trigger `.github/workflows/release.yml` (if configured for tag pushes).
+4. Confirm the release workflow succeeds and attaches `mpv-android-lib-v1.1.0.aar`.
+5. Inspect the AAR to ensure it contains native libraries for all four ABIs.
+
+Publishing a GitHub Release alone does **not** prove that the AAR was successfully built or attached.
+
+### Local native builds
+
+On a supported Linux build environment, use the repository's scripts and required Android toolchain:
 
 ```bash
-./buildscripts/buildall.sh
+cd buildscripts
+./download.sh
+./buildall.sh --arch arm64 mpv
 ```
 
-Docker build is also supported:
+The repository also includes `buildall.sh` and `docker-build.sh` for its supported build process. Refer to the scripts for supported arguments and toolchain requirements.
 
-```bash
-./buildscripts/docker-build.sh
-```
+## Verification
+
+Before integrating a new AAR into an application:
+
+- Confirm the source checkout tags for mpv, FFmpeg, and libplacebo.
+- Inspect the resulting AAR and embedded `.so` files for the expected ABIs.
+- Confirm compiled native versions where possible; build-log tag selection alone is not binary verification.
+- Test playback, audio, subtitles, hardware decoding, Vulkan rendering, thumbnails, and network streams on actual Android devices.
+- Check JNI/API compatibility with the consuming application, including mpvFlux.
+
+## Project background and credits
+
+This repository is a fork of the [marlboro-advance/mpv-android](https://github.com/marlboro-advance/mpv-android) project and builds on the work of the mpv and FFmpeg communities. The original Android library credits **Ilya Zhuravlev** and **sfan5**.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/marlboro-advance/mpv-lib/blob/main/LICENSE) file for details.
+See [LICENSE](LICENSE) for the repository's MIT license. Bundled native components and their dependencies have their **own licenses**, which must also be reviewed when redistributing compiled binaries.
 
-## Acknowledgments
-
-- [mpv](https://mpv.io/) - The underlying media player
-- Original authors: Ilya Zhuravlev and sfan5
+- [mpv](https://github.com/mpv-player/mpv)
+- [FFmpeg](https://ffmpeg.org/)
+- [libplacebo](https://code.videolan.org/videolan/libplacebo)
