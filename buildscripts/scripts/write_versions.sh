@@ -2,7 +2,10 @@
 # get versions from source code
 MPV_VERSION=$(cat buildscripts/deps/mpv/_build$1/common/version.h | grep "#define VERSION" | cut -d '"' -f 2)
 LIBPLACEBO_VERSION=$(cat buildscripts/deps/libplacebo/_build$1/src/version.h | grep "#define BUILD_VERSION" | cut -d '"' -f 2)
-FFMPEG_VERSION=$(echo $(cd buildscripts/deps/ffmpeg/ && git rev-parse --short HEAD))
+# FFmpeg is checked out from the pinned release tag in depinfo.sh.
+# Display its release version instead of its Git commit hash.
+. buildscripts/include/depinfo.sh
+FFMPEG_VERSION="${v_ci_ffmpeg#n}"
 # get build date from compiled object file
 START_RODATA=0x$(readelf buildscripts/deps/mpv/_build$1/libmpv.so.p/common_version.c.o -S | grep .rodata | cut -d ' ' -f 27)
 START=0x$(readelf buildscripts/deps/mpv/_build$1/libmpv.so.p/common_version.c.o -s | grep mpv_builddate | cut -d ' ' -f 7)
