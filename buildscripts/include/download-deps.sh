@@ -19,9 +19,7 @@ fi
 
 # ffmpeg
 if [ ! -d ffmpeg ]; then
-	args=()
-	[ $IN_CI -eq 1 ] && args+=(--depth=1 -b "$v_ci_ffmpeg")
-	git clone https://github.com/FFmpeg/FFmpeg ffmpeg "${args[@]}"
+	git clone --depth=1 --branch "$v_ci_ffmpeg" https://github.com/FFmpeg/FFmpeg ffmpeg
 fi
 
 # freetype2
@@ -90,6 +88,6 @@ if [ ! -d curl ]; then
 fi
 
 # mpv
-[ ! -d mpv ] && git clone https://github.com/mpv-player/mpv
+[ ! -d mpv ] && git clone --depth=1 --branch "$v_ci_mpv" https://github.com/mpv-player/mpv mpv
 
 cd ..

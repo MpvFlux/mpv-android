@@ -27,7 +27,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             RAW_TAG="${GITHUB_REF#refs/tags/}"
           else
-            RAW_TAG="v1.0.0"
+            RAW_TAG="v1.1.0"
           fi
           echo "VERSION_TAG=$RAW_TAG" >> $GITHUB_ENV
           echo "MAVEN_VERSION=${RAW_TAG#v}" >> $GITHUB_ENV
@@ -55,24 +55,6 @@ jobs:
         env:
           GRADLE_OPTS: -Xmx4G
 
-      - name: Publish and Upload to Maven Central Portal
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-        run: |
-          set -e
-          ./gradlew :app:publishReleasePublicationToBuildDirRepository
-          cd app/build/repo
-          zip -r ../central-bundle.zip .
-          cd ../../..
-          TOKEN=$(printf "%s:%s" "$MAVEN_CENTRAL_USERNAME" "$MAVEN_CENTRAL_PASSWORD" | base64 -w 0)
-          echo "Uploading bundle to Sonatype Central Portal..."
-          curl --fail-with-body -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -H "Authorization: Bearer $TOKEN" \
-            -F "bundle=@app/build/central-bundle.zip"
-
       - name: Copy build artifacts
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -88,10 +70,7 @@ jobs:
           body: |
             ### mpv-android-lib ${{ env.VERSION_TAG }}
 
-            #### Maven Central Coordinates
-            ```gradle
-            implementation("io.github.marlboro-advance:mpv-android:${{ env.MAVEN_VERSION }}")
-            ```
+            Built with mpv 0.42.0 and FFmpeg 9.1.
 
             Includes all native ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) with libmpv and Vulkan support.
           files: |
